@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Ranking Pages for Content Refresh</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        line-height: 1.7;
+        background: #f5f7fa;
+        color: #222;
+    }
+
+    .container {
+        max-width: 950px;
+        margin: 40px auto;
+        background: white;
+        padding: 50px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+        font-size: 38px;
+        margin-bottom: 5px;
+        color: #172033;
+    }
+
+    .subtitle {
+        font-size: 19px;
+        color: #666;
+        margin-bottom: 35px;
+    }
+
+    h2 {
+        margin-top: 45px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e5e7eb;
+        color: #172033;
+    }
+
+    h3 {
+        color: #303b52;
+        margin-top: 28px;
+    }
+
+    .highlight {
+        background: #f1f5f9;
+        padding: 20px;
+        border-left: 4px solid #334155;
+        margin: 20px 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+    }
+
+    th {
+        background: #f1f5f9;
+    }
+
+    .metric {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    footer {
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+        color: #666;
+        font-size: 14px;
+    }
+
+    code {
+        background: #f1f5f9;
+        padding: 3px 6px;
+        border-radius: 4px;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Ranking Pages for Content Refresh</h1>
+
+<div class="subtitle">
+A FlyRank Content-Refresh Modeling Study
+</div>
+
+<h2>Abstract</h2>
+
+<p>
+This study asks whether a machine-learning model can rank pages that are likely to be declining using observable content and search-performance signals. The analysis uses the anonymized FlyRank starter dataset of approximately 30,000 pages and defines the starter decline label from the observed trend direction.
+</p>
+
+<p>
+A Decision Tree is compared with a transparent stale-and-visible hand-rule baseline using Precision@50 under a client-grouped holdout split. The resulting ranking is treated as directional decision-support for prioritizing review rather than as proof of future traffic outcomes or a causal effect.
+</p>
+
+<h2>1. Research Question and Decision</h2>
+
+<p>
+<strong>Research question:</strong> Can a machine-learning model identify and rank pages that are likely to be declining using observable content and search-performance signals?
+</p>
+
+<div class="highlight">
+<strong>Decision supported:</strong> The analysis supports prioritizing pages for SEO/review when a team has more pages to inspect than it can review manually.
+</div>
+
+<p>
+The main evaluation metric is <strong>Precision@50</strong>. This measures the fraction of actually declining pages among the first 50 pages selected by the ranking.
+</p>
+
+<h2>2. Data</h2>
+
+<p>
+The analysis uses the anonymized FlyRank starter dataset, a small public-safe development slice of approximately 30,000 pseudonymized pages. The work uses the flat starter CSV rather than production warehouse tables or private client-level sources.
+</p>
+
+<p>The final model uses six observable signals:</p>
+
+<ul>
+<li><code>content_age_days</code></li>
+<li><code>days_since_last_update</code></li>
+<li><code>impressions_90d</code></li>
+<li><code>avg_position</code></li>
+<li><code>ctr</code></li>
+<li><code>word_count</code></li>
+</ul>
+
+<p>
+The starter decline label is derived from <code>trend_direction</code>: a page is labelled declining when <code>trend_direction</code> is <code>down</code>.
+</p>
+
+<p>
+Rows missing required modeling fields are excluded from the modeling sample. Client names, raw URLs, private queries, titles, and other private identifiers are not used in the paper.
+</p>
+
+<h2>3. Methodology</h2>
+
+<h3>3.1 Model</h3>
+
+<p>
+A Decision Tree is used because it can represent simple non-linear relationships while remaining relatively easy to interpret. The model is configured with a maximum depth of 4 and balanced class weights.
+</p>
+
+<h3>3.2 Baseline</h3>
+
+<p>
+The baseline is a transparent hand rule. A page is considered a candidate when it is stale
+(<code>days_since_last_update &gt;= 180</code>) and visible
+(<code>impressions_90d &gt;= 500</code>). Candidate pages are ranked by <code>impressions_90d</code>.
+</p>
+
+<h3>3.3 Validation</h3>
+
+<p>
+Validation uses a client-grouped holdout. Approximately 20% of clients are held out for testing, so pages from the same client do not appear in both training and test data. This is more conservative than a simple random row split because it tests the model on unseen clients.
+</p>
+
+<h3>3.4 Leakage Checks</h3>
+
+<p>
+The target label and client identifier are excluded from the feature set. Trend-derived fields used to construct the target are not predictors. The train/test client intersection is checked and must equal zero.
+</p>
+
+<h2>4. Results</h2>
+
+<p>
+Both methods were evaluated on the same client-grouped test split.
+</p>
+
+<table>
+<tr>
+<th>Method</th>
+<th>Precision@50</th>
+<th>Interpretation</th>
+</tr>
+
+<tr>
+<td>Week-4 hand-rule baseline</td>
+<td class="metric">0.56</td>
+<td>Reference prioritization rule</td>
+</tr>
+
+<tr>
+<td>Decision Tree</td>
+<td class="metric">0.60</td>
+<td>Learned ranking model</td>
+</tr>
+</table>
+
+<div class="highlight">
+<strong>Observed result:</strong> On the tested client-grouped split, the Decision Tree measured higher Precision@50 than the Week-4 baseline. This is an observed result on the tested sample and should be interpreted as directional evidence for prioritization rather than a guarantee of future performance.
+</div>
+
+<h2>5. Limitations</h2>
+
+<ul>
+<li>The decline label is a proxy derived from the observed <code>trend_direction</code> field rather than a direct future-outcome label.</li>
+
+<li>The analysis uses the anonymized starter slice rather than the full production-scale warehouse.</li>
+
+<li>A high model score does not prove that a page needs a particular content change or that changing it will improve traffic.</li>
+
+<li>Measured performance depends on the selected features, split, metric, and sample.</li>
+
+<li>Search behavior, seasonality, content mix, and data distribution can change, so recommendations may become stale.</li>
+
+<li>Review is required before making substantive content, SEO, publishing, deletion, or redirect decisions.</li>
+</ul>
+
+<h2>6. Ranked Recommendations</h2>
+
+<p>
+The action playbook ranks pages by the Decision Tree's estimated decline probability. Reason codes provide short, clear explanations based on observable signals.
+</p>
+
+<table>
+<tr>
+<th>Reason Code</th>
+<th>Observable Signal</th>
+</tr>
+
+<tr>
+<td>STALE_CONTENT</td>
+<td>days_since_last_update &gt;= 180</td>
+</tr>
+
+<tr>
+<td>HIGH_VISIBILITY</td>
+<td>impressions_90d &gt;= 500</td>
+</tr>
+
+<tr>
+<td>LOWER_RANKING</td>
+<td>avg_position &gt;= 10</td>
+</tr>
+
+<tr>
+<td>LOW_CTR</td>
+<td>ctr &lt; 0.03</td>
+</tr>
+
+<tr>
+<td>SHORT_CONTENT</td>
+<td>word_count &lt; 500</td>
+</tr>
+</table>
+
+<p>
+<strong>Recommended workflow:</strong> review the highest-scored pages first; inspect current content, search intent, recent changes, seasonality, ranking context, and related pages; then decide whether an action is appropriate.
+</p>
+
+<p>
+<strong>No-go list:</strong> the model should not automatically publish, delete, redirect, substantially rewrite, or make claims about penalties or future traffic. Its role is prioritization and decision-support.
+</p>
+
+<h2>7. Artifacts and Reproducibility</h2>
+
+<p>The analysis produces:</p>
+
+<ul>
+<li>Model-versus-baseline table</li>
+<li>Feature-importance table and chart</li>
+<li>Model-versus-baseline Precision@50 chart</li>
+<li>Ranked action queue</li>
+</ul>
+
+<p>Intended output files:</p>
+
+<ul>
+<li><code>work/outputs/model_vs_baseline.csv</code></li>
+<li><code>work/outputs/feature_importance.csv</code></li>
+<li><code>work/outputs/model_vs_baseline.png</code></li>
+<li><code>work/outputs/feature_importance.png</code></li>
+<li><code>work/outputs/ranked_action_queue.csv</code></li>
+</ul>
+
+<p>
+The executed ML-11 notebook is the source of truth for the measured numbers. Re-running the notebook from top to bottom should recreate the tables, charts, and queue under the same data and validation design.
+</p>
+
+<h2>8. Deployment and Presentation Notes</h2>
+
+<p>
+This research paper is deployed as a public-safe page through GitHub Pages. The page includes the title, abstract, research question, data, methodology, results, limitations, ranked recommendations, reproducibility information, and acknowledgments/data credit.
+</p>
+
+<h2>9. Acknowledgments and Data Credit</h2>
+
+<p>
+This work was completed as part of the FlyRank AI Internship and was built using the anonymized FlyRank internship dataset and assignment methodology.
+</p>
+
+<p>
+<strong>Data credit:</strong> FlyRank AI
+</p>
+
+<p>
+<a href="https://flyrank.ai" target="_blank">FlyRank AI</a>
+</p>
+
+<footer>
+<p>
+FlyRank ML Internship — Research Paper
+</p>
+<p>
+The results presented here are measured on the tested sample and are intended as directional decision-support.
+</p>
+</footer>
+
+</div>
+
+</body>
+</html>
